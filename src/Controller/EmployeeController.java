@@ -42,11 +42,10 @@ public class EmployeeController {
             }
         });
 
-        // Ajout du listener pour le bouton "Modifier"
         view.modifyButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                updateEmployee();  // Appel de la méthode pour mettre à jour l'employé
+                updateEmployee(); 
             }
         });
     }
@@ -99,14 +98,12 @@ public class EmployeeController {
             Employee existingEmployee = dao.findById(id);
 
             if (existingEmployee != null) {
-                // Mise à jour des champs avec les nouvelles valeurs
                 existingEmployee.setNom(view.nameField.getText());
                 existingEmployee.setPrenom(view.surnameField.getText());
                 existingEmployee.setEmail(view.emailField.getText());
                 existingEmployee.setPhone(view.phoneField.getText());
                 existingEmployee.setSalaire(Double.parseDouble(view.salaryField.getText()));
 
-                // Utilisation de toUpperCase pour correspondre à l'énumération
                 existingEmployee.setRole(Role.valueOf(view.roleCombo.getSelectedItem().toString().toUpperCase()));
                 existingEmployee.setPoste(Poste.valueOf(view.posteCombo.getSelectedItem().toString().toUpperCase()));
 
