@@ -46,20 +46,38 @@ public class EmployeeDAOImpl implements EmployeeDAOI {
              ResultSet rs = stmt.executeQuery()) {
 
             while (rs.next()) {
+                String roleStr = rs.getString("role").toUpperCase();
+                String posteStr = rs.getString("poste").toUpperCase();
+
+                Role role = null;
+                Poste poste = null;
+                try {
+                    role = Role.valueOf(roleStr);
+                } catch (IllegalArgumentException e) {
+                    System.out.println("Role non valide : " + roleStr);
+                    role = Role.EMPLOYE; // Valeur par défaut
+                }
+
+                try {
+                    poste = Poste.valueOf(posteStr);
+                } catch (IllegalArgumentException e) {
+                    System.out.println("Poste non valide : " + posteStr);
+                    poste = Poste.INGENIEURE_ETUDE_ET_DEVELOPPEMENT;
+                }
+
                 Employee employee = new Employee(
                         rs.getString("nom"),
                         rs.getString("prenom"),
                         rs.getString("email"),
                         rs.getString("phone"),
                         rs.getDouble("salaire"),
-                        // Gestion des erreurs si "role" ou "poste" ne correspond pas
-                        Role.valueOf(rs.getString("role").toUpperCase()),  // Ajoutez .toUpperCase() si nécessaire
-                        Poste.valueOf(rs.getString("poste").toUpperCase()) // Ajoutez .toUpperCase() si nécessaire
+                        role,
+                        poste
                 );
                 employee.setId(rs.getInt("id"));
                 employees.add(employee);
             }
-        } catch (SQLException | IllegalArgumentException e) {
+        } catch (SQLException e) {
             e.printStackTrace();
         }
         return employees;
@@ -67,6 +85,9 @@ public class EmployeeDAOImpl implements EmployeeDAOI {
 
 
 
+
+
+    @Override
     public Employee findById(int id) {
         String sql = "SELECT * FROM Employe WHERE id = ?";
         try (Connection conn = DBConnection.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -79,8 +100,8 @@ public class EmployeeDAOImpl implements EmployeeDAOI {
                         rs.getString("email"),
                         rs.getString("phone"),
                         rs.getDouble("salaire"),
-                        Role.valueOf(rs.getString("role").toUpperCase()),  // Convertir en majuscule
-                        Poste.valueOf(rs.getString("poste").toUpperCase()) // Convertir en majuscule
+                        Role.valueOf(rs.getString("role")),
+                        Poste.valueOf(rs.getString("poste"))
                 );
             }
         } catch (SQLException e) {
@@ -89,10 +110,10 @@ public class EmployeeDAOImpl implements EmployeeDAOI {
         return null;
     }
 
-
     @Override
     public void update(Employee employee, int id) {
         String sql = "UPDATE Employe SET nom = ?, prenom = ?, email = ?, phone = ?, salaire = ?, role = ?, poste = ? WHERE id = ?";
+
         try (Connection conn = DBConnection.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, employee.getNom());
             stmt.setString(2, employee.getPrenom());
@@ -102,9 +123,16 @@ public class EmployeeDAOImpl implements EmployeeDAOI {
             stmt.setString(6, employee.getRole().name());
             stmt.setString(7, employee.getPoste().name());
             stmt.setInt(8, id);
-            stmt.executeUpdate();
+
+            int rowsUpdated = stmt.executeUpdate();
+
+            if (rowsUpdated > 0) {
+                System.out.println("L'employé a été mis à jour avec succès.");
+            } else {
+                System.out.println("Aucun employé trouvé avec cet ID.");
+            }
+
         } catch (SQLException e) {
             e.printStackTrace();
-        }
-    }
+      }}
 }

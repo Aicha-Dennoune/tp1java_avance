@@ -45,7 +45,7 @@ public class EmployeeController {
         view.modifyButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                updateEmployee(); 
+                updateEmployee();
             }
         });
     }
@@ -109,7 +109,7 @@ public class EmployeeController {
 
                 dao.update(existingEmployee, id);
                 JOptionPane.showMessageDialog(view, "Employé mis à jour avec succès.");
-                listEmployees(); // Actualiser la liste
+                listEmployees();
             } else {
                 JOptionPane.showMessageDialog(view, "Aucun employé trouvé avec cet ID.");
             }
