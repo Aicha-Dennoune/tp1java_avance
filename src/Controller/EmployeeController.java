@@ -101,7 +101,6 @@ public class EmployeeController {
     }
 
     // Méthode pour modifier un employé
-    // Méthode pour modifier un employé
     private void modifyEmployee() {
         try {
             // Vérifier si une ligne est sélectionnée dans le tableau
