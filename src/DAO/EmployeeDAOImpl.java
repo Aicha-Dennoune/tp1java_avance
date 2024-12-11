@@ -62,7 +62,7 @@ public class EmployeeDAOImpl implements EmployeeDAOI {
                     poste = Poste.valueOf(posteStr);
                 } catch (IllegalArgumentException e) {
                     System.out.println("Poste non valide : " + posteStr);
-                    poste = Poste.INGENIEURE_ETUDE_ET_DEVELOPPEMENT;
+                    poste = Poste.INGENIEURE_ETUDE_ET_DEVELOPPEMENT; // Valeur par défaut
                 }
 
                 Employee employee = new Employee(
@@ -120,9 +120,9 @@ public class EmployeeDAOImpl implements EmployeeDAOI {
             stmt.setString(3, employee.getEmail());
             stmt.setString(4, employee.getPhone());
             stmt.setDouble(5, employee.getSalaire());
-            stmt.setString(6, employee.getRole().name());
-            stmt.setString(7, employee.getPoste().name());
-            stmt.setInt(8, id);
+            stmt.setString(6, employee.getRole().name()); // Envoi du rôle en tant que chaîne (avec la méthode .name())
+            stmt.setString(7, employee.getPoste().name()); // Idem pour le poste
+            stmt.setInt(8, id); // L'ID de l'employé à mettre à jour
 
             int rowsUpdated = stmt.executeUpdate();
 
@@ -134,5 +134,7 @@ public class EmployeeDAOImpl implements EmployeeDAOI {
 
         } catch (SQLException e) {
             e.printStackTrace();
-      }}
+        }
+    }
+
 }
