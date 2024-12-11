@@ -11,7 +11,9 @@ import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+
 import java.util.List;
+
 
 public class EmployeeController {
     private final EmployeeView view;
@@ -21,6 +23,7 @@ public class EmployeeController {
         this.view = view;
         this.dao = new EmployeeDAOImpl();
 
+        // Écouteur pour le bouton Ajouter
         view.addButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -28,6 +31,7 @@ public class EmployeeController {
             }
         });
 
+        // Écouteur pour le bouton Lister
         view.listButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -35,6 +39,7 @@ public class EmployeeController {
             }
         });
 
+        // Écouteur pour le bouton Supprimer
         view.deleteButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -42,14 +47,16 @@ public class EmployeeController {
             }
         });
 
+        // Écouteur pour le bouton Modifier
         view.modifyButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                updateEmployee();
+                modifyEmployee();
             }
         });
     }
 
+    // Méthode pour ajouter un employé
     private void addEmployee() {
         try {
             String nom = view.nameField.getText();
@@ -68,6 +75,7 @@ public class EmployeeController {
         }
     }
 
+    // Méthode pour afficher la liste des employés
     private void listEmployees() {
         List<Employee> employees = dao.listAll();
         String[] columnNames = {"ID", "Nom", "Prénom", "Email", "Téléphone", "Salaire", "Rôle", "Poste"};
@@ -81,43 +89,51 @@ public class EmployeeController {
         view.employeeTable.setModel(model);
     }
 
+    // Méthode pour supprimer un employé
     private void deleteEmployee() {
         try {
             int id = Integer.parseInt(JOptionPane.showInputDialog(view, "Entrez l'ID de l'employé à supprimer :"));
             dao.delete(id);
             JOptionPane.showMessageDialog(view, "Employé supprimé avec succès.");
-            listEmployees(); // Actualiser la liste
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(view, "Erreur: " + ex.getMessage());
         }
     }
 
-    public void updateEmployee() {
+    // Méthode pour modifier un employé
+    // Méthode pour modifier un employé
+    private void modifyEmployee() {
         try {
-            int id = Integer.parseInt(JOptionPane.showInputDialog(view, "Entrez l'ID de l'employé à modifier :"));
-            Employee existingEmployee = dao.findById(id);
-
-            if (existingEmployee != null) {
-                existingEmployee.setNom(view.nameField.getText());
-                existingEmployee.setPrenom(view.surnameField.getText());
-                existingEmployee.setEmail(view.emailField.getText());
-                existingEmployee.setPhone(view.phoneField.getText());
-                existingEmployee.setSalaire(Double.parseDouble(view.salaryField.getText()));
-
-                existingEmployee.setRole(Role.valueOf(view.roleCombo.getSelectedItem().toString().toUpperCase()));
-                existingEmployee.setPoste(Poste.valueOf(view.posteCombo.getSelectedItem().toString().toUpperCase()));
-
-                dao.update(existingEmployee, id);
-                JOptionPane.showMessageDialog(view, "Employé mis à jour avec succès.");
-                listEmployees();
-            } else {
-                JOptionPane.showMessageDialog(view, "Aucun employé trouvé avec cet ID.");
+            // Vérifier si une ligne est sélectionnée dans le tableau
+            int selectedRow = view.employeeTable.getSelectedRow();
+            if (selectedRow == -1) {
+                JOptionPane.showMessageDialog(view, "Veuillez sélectionner un employé dans le tableau.");
+                return;
             }
-        } catch (IllegalArgumentException e) {
-            JOptionPane.showMessageDialog(view, "Erreur : rôle ou poste invalide.");
+
+            // Récupérer l'ID de l'employé sélectionné
+            int id = (int) view.employeeTable.getValueAt(selectedRow, 0);
+
+            // Charger les nouvelles informations depuis les champs
+            String nom = view.nameField.getText();
+            String prenom = view.surnameField.getText();
+            String email = view.emailField.getText();
+            String phone = view.phoneField.getText();
+            double salaire = Double.parseDouble(view.salaryField.getText());
+            Role role = Role.valueOf(view.roleCombo.getSelectedItem().toString().toUpperCase());
+            Poste poste = Poste.valueOf(view.posteCombo.getSelectedItem().toString().toUpperCase());
+
+            // Créer un nouvel objet Employee avec les informations mises à jour
+            Employee updatedEmployee = new Employee(nom, prenom, email, phone, salaire, role, poste);
+
+            // Mettre à jour dans la base de données
+            dao.update(updatedEmployee, id);
+
+            // Rafraîchir la table
+            JOptionPane.showMessageDialog(view, "Employé mis à jour avec succès.");
+            listEmployees();
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(view, "Erreur: " + ex.getMessage());
         }
     }
-
 }
