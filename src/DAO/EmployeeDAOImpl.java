@@ -8,7 +8,7 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
-public class EmployeeDAOImpl implements EmployeeDAOI {
+public class EmployeeDAOImpl implements GenericDAO<Employee> {
 
     @Override
     public void add(Employee employee) {
@@ -123,7 +123,6 @@ public class EmployeeDAOImpl implements EmployeeDAOI {
             stmt.setString(6, employee.getRole().name()); // Envoi du rôle en tant que chaîne (avec la méthode .name())
             stmt.setString(7, employee.getPoste().name()); // Idem pour le poste
             stmt.setInt(8, id); // L'ID de l'employé à mettre à jour
-
             int rowsUpdated = stmt.executeUpdate();
 
             if (rowsUpdated > 0) {

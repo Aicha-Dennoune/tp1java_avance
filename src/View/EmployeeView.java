@@ -5,7 +5,7 @@ import java.awt.*;
 
 public class EmployeeView extends JFrame {
     public JTable employeeTable;
-    public JButton addButton, listButton, deleteButton, modifyButton;
+    public JButton addButton, listButton, deleteButton, modifyButton, switchViewButton;
     public JTextField nameField, surnameField, emailField, phoneField, salaryField;
     public JComboBox<String> roleCombo, posteCombo;
 
@@ -53,13 +53,16 @@ public class EmployeeView extends JFrame {
         JPanel buttonPanel = new JPanel();
         addButton = new JButton("Ajouter");
         buttonPanel.add(addButton);
-        listButton = new JButton("Lister");
+        listButton = new JButton("Afficher");
         buttonPanel.add(listButton);
         deleteButton = new JButton("Supprimer");
         buttonPanel.add(deleteButton);
         modifyButton = new JButton("Modifier");
         buttonPanel.add(modifyButton);
 
+        // Adding the navigation button to switch to the Holiday view
+        switchViewButton = new JButton("Gérer les Congés");
+        buttonPanel.add(switchViewButton);
 
         add(buttonPanel, BorderLayout.SOUTH);
     }
