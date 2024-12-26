@@ -55,7 +55,7 @@ public class EmployeeDAOImpl implements GenericDAO<Employee> {
                     role = Role.valueOf(roleStr);
                 } catch (IllegalArgumentException e) {
                     System.out.println("Role non valide : " + roleStr);
-                    role = Role.EMPLOYE; // Valeur par défaut
+                    role = Role.EMPLOYE;
                 }
 
                 try {

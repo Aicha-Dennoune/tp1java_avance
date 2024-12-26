@@ -10,6 +10,7 @@ public class Main {
         EmployeeView employeeView = new EmployeeView();
         HolidayView holidayView = new HolidayView();
 
+        // Créer les contrôleurs pour chaque vue
         new EmployeeController(employeeView, holidayView);
         new HolidayController(holidayView);
 
