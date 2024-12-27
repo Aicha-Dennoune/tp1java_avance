@@ -95,6 +95,15 @@ public class EmployeeController {
                 return;
             }
 
+            // Vérification de l'unicité de l'adresse e-mail
+            List<Employee> employees = dao.listAll();
+            for (Employee emp : employees) {
+                if (emp.getEmail().equalsIgnoreCase(email)) {
+                    JOptionPane.showMessageDialog(view, "Cette adresse e-mail existe déjà. Veuillez en choisir une autre.");
+                    return;
+                }
+            }
+
             double salaire = Double.parseDouble(salaireText);
 
             Role role = Role.valueOf(view.roleCombo.getSelectedItem().toString().toUpperCase());
@@ -112,6 +121,7 @@ public class EmployeeController {
             JOptionPane.showMessageDialog(view, "Erreur: " + ex.getMessage());
         }
     }
+
 
     private boolean isValidEmail(String email) {
         String emailRegex = "^[\\w.-]+@[\\w.-]+\\.[a-zA-Z]{2,}$";
@@ -150,11 +160,13 @@ public class EmployeeController {
                 dao.delete(id);
                 JOptionPane.showMessageDialog(view, "Employé supprimé avec succès.");
                 listEmployees();
+                clearFields(); // Vider les champs après suppression
             }
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(view, "Erreur : " + ex.getMessage());
         }
     }
+
 
     private void modifyEmployee() {
         try {

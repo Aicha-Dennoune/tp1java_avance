@@ -75,7 +75,6 @@ public class HolidayController {
         }
     }
 
-
     private boolean isValidDate(String date) {
         try {
             LocalDate.parse(date, DateTimeFormatter.ISO_LOCAL_DATE);
@@ -106,10 +105,11 @@ public class HolidayController {
             Holiday holiday = new Holiday(employeeName, startDate, endDate, type);
             dao.add(holiday);
             refreshHolidayTable();
-            clearFields();
             JOptionPane.showMessageDialog(view, "Congé ajouté avec succès.");
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(view, "Erreur : " + ex.getMessage());
+        } finally {
+            clearFields();
         }
     }
 
@@ -140,38 +140,16 @@ public class HolidayController {
 
                 // Refresh the table after the update
                 refreshHolidayTable();
-                clearFields();
                 JOptionPane.showMessageDialog(view, "Congé modifié avec succès.");
             } else {
                 JOptionPane.showMessageDialog(view, "Veuillez sélectionner un congé.");
             }
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(view, "Erreur : " + ex.getMessage());
+        } finally {
+            clearFields();
         }
     }
-
-
-    private void clearFields() {
-        // Réactiver le combo box des employés
-        view.employeeNameComboBox.setEnabled(true);
-        // Réinitialiser la sélection du combo box des employés au premier élément
-        if (view.employeeNameComboBox.getItemCount() > 0) {
-            view.employeeNameComboBox.setSelectedIndex(0);
-        }
-
-        // Vider les champs de date
-        view.startDateField.setText("");
-        view.endDateField.setText("");
-
-        // Réinitialiser la sélection du type de congé au premier élément
-        if (view.typeCombo.getItemCount() > 0) {
-            view.typeCombo.setSelectedIndex(0);
-        }
-
-        // Effacer l'ID sauvegardé dans le bouton de modification (ActionCommand)
-        view.modifyButton.setActionCommand("");
-    }
-
 
     private void deleteHoliday() {
         try {
@@ -214,11 +192,32 @@ public class HolidayController {
             // Supprimer le congé
             dao.delete(id);
             refreshHolidayTable();
-            clearFields(); // Réinitialiser les champs après suppression
             JOptionPane.showMessageDialog(view, "Congé supprimé avec succès.");
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(view, "Erreur : " + ex.getMessage());
+        } finally {
+            clearFields();
         }
     }
 
+    private void clearFields() {
+        // Réactiver le combo box des employés
+        view.employeeNameComboBox.setEnabled(true);
+        // Réinitialiser la sélection du combo box des employés au premier élément
+        if (view.employeeNameComboBox.getItemCount() > 0) {
+            view.employeeNameComboBox.setSelectedIndex(0);
+        }
+
+        // Vider les champs de date
+        view.startDateField.setText("");
+        view.endDateField.setText("");
+
+        // Réinitialiser la sélection du type de congé au premier élément
+        if (view.typeCombo.getItemCount() > 0) {
+            view.typeCombo.setSelectedIndex(0);
+        }
+
+        // Effacer l'ID sauvegardé dans le bouton de modification (ActionCommand)
+        view.modifyButton.setActionCommand("");
+    }
 }

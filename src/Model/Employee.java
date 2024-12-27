@@ -55,7 +55,6 @@ public class Employee {
         this.solde = solde;
     }
 
-    // Exemple d'une méthode pour réduire le solde
     public void reduceSolde(int days) {
         if (days <= this.solde) {
             this.solde -= days;
@@ -64,7 +63,6 @@ public class Employee {
         }
     }
 
-    // Méthode pour réinitialiser le solde des congés chaque année
     public void resetSolde() {
         this.solde = 25; // Reset to 25 days
     }

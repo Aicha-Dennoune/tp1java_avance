@@ -22,8 +22,7 @@ public class HolidayDAOImpl implements GenericDAO<Holiday> {
         try (Connection conn = DBConnection.getConnection(); PreparedStatement stmt = conn.prepareStatement(INSERT_HOLIDAY_SQL)) {
             int employeeId = getEmployeeIdByName(holiday.getEmployeeName());
             if (employeeId == -1) {
-                System.out.println("Erreur : Employé introuvable.");
-                return;
+                throw new IllegalArgumentException("Employé introuvable : " + holiday.getEmployeeName());
             }
 
             // Get employee details to update their leave balance
@@ -31,28 +30,28 @@ public class HolidayDAOImpl implements GenericDAO<Holiday> {
             int requiredDays = (int) java.time.temporal.ChronoUnit.DAYS.between(
                     java.time.LocalDate.parse(holiday.getStartDate()),
                     java.time.LocalDate.parse(holiday.getEndDate())
-            );
-            if (employee.getSolde() >= requiredDays) {
-                employee.reduceSolde(requiredDays);
+            ) + 1; // Inclure le premier jour dans le calcul
 
-                // Mise à jour du solde dans la base de données
+            if (employee.getSolde() >= requiredDays) {
+                // Réduire le solde des jours de congés disponibles
+                employee.reduceSolde(requiredDays);
                 updateEmployeeSolde(employee);
 
+                // Préparer la requête pour insérer le congé
                 stmt.setInt(1, employeeId);
                 stmt.setString(2, holiday.getStartDate());
                 stmt.setString(3, holiday.getEndDate());
-                stmt.setString(4, holiday.getType().name());
+                stmt.setString(4, holiday.getType().toString());
                 stmt.executeUpdate();
-                System.out.println("Congé ajouté avec succès.");
             } else {
-                System.out.println("Erreur : Solde de congés insuffisant.");
+                throw new IllegalArgumentException("Solde insuffisant pour accorder ce congé.");
             }
-
         } catch (SQLException e) {
-            System.err.println("Erreur lors de l'ajout du congé : " + e.getMessage());
             e.printStackTrace();
+            throw new RuntimeException("Erreur lors de l'ajout du congé : " + e.getMessage());
         }
     }
+
 
     public void updateEmployeeSolde(Employee employee) {
         String updateSoldeSql = "UPDATE employe SET solde = ? WHERE id = ?";
