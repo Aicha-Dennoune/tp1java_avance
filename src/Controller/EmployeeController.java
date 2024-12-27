@@ -218,5 +218,4 @@ public class EmployeeController {
         view.posteCombo.setSelectedIndex(0); // Réinitialise au premier élément
         view.modifyButton.setActionCommand(""); // Effacer l'ID stocké
     }
-
 }
