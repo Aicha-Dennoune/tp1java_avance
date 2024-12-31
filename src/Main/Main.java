@@ -2,28 +2,41 @@ package Main;
 
 import Controller.EmployeeController;
 import Controller.HolidayController;
+import Controller.LoginController;
+import DAO.EmployeeDAOImpl;
+import DAO.HolidayDAOImpl;
+import DAO.LoginDAOImpl;
+import Model.Employee;
+import Model.EmployeeModel;
+import Model.HolidayModel;
+import Model.LoginModel;
 import View.EmployeeView;
 import View.HolidayView;
+import View.LoginView;
+import View.PanelsView;
 
 public class Main {
+
     public static void main(String[] args) {
-        EmployeeView employeeView = new EmployeeView();
+       LoginController loginController = new LoginController(new LoginModel(new LoginDAOImpl()), LoginView.getInstance());
+
+     EmployeeView employeeView = new EmployeeView();
         HolidayView holidayView = new HolidayView();
 
-        // Créer les contrôleurs pour chaque vue
-        new EmployeeController(employeeView, holidayView);
-        new HolidayController(holidayView);
+        EmployeeDAOImpl daoEmploye = new EmployeeDAOImpl();  
+        HolidayDAOImpl daoHoliday = new HolidayDAOImpl();  
 
-        employeeView.setVisible(true);
+        EmployeeModel employeeModel = new EmployeeModel(daoEmploye);  
+        HolidayModel holidayModel = new HolidayModel(daoHoliday);  
 
-        employeeView.switchViewButton.addActionListener(e -> {
-            employeeView.setVisible(false);
-            holidayView.setVisible(true);
-        });
+        Employee employee = new Employee(); 
 
-        holidayView.switchViewButton.addActionListener(e -> {
-            holidayView.setVisible(false);
-            employeeView.setVisible(true);
-        });
+        PanelsView view = PanelsView.getInstance(employeeView, holidayView);  
+
+        new EmployeeController(employeeModel, employeeView, employee);  
+        new HolidayController(holidayModel, holidayView, employee);  
+
+        view.setVisible(true);
+        
     }
 }

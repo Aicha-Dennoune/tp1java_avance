@@ -1,221 +1,242 @@
 package Controller;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
-import DAO.GenericDAO;
-import DAO.EmployeeDAOImpl;
+import javax.swing.JFileChooser;
+import javax.swing.filechooser.FileNameExtensionFilter;
+import javax.swing.table.DefaultTableModel;
+
+import Utilities.Utils;
+import java.io.IOException;
+
 import Model.Employee;
+import Model.EmployeeModel;
+import Model.LoginModel;
 import Model.Poste;
 import Model.Role;
 import View.EmployeeView;
-import View.HolidayView;
-
-import javax.swing.*;
-import javax.swing.table.DefaultTableModel;
-import java.util.List;
 
 public class EmployeeController {
-    private final EmployeeView view;
-    private final GenericDAO<Employee> dao;
-    private final HolidayView holidayView;
-
-    public EmployeeController(EmployeeView view, HolidayView holidayView) {
-        this.view = view;
-        this.dao = new EmployeeDAOImpl();
-        this.holidayView = holidayView;
-
-        // Écouteur pour le bouton Ajouter
-        view.addButton.addActionListener(e -> addEmployee());
-
-        // Écouteur pour le bouton Lister
-        view.listButton.addActionListener(e -> listEmployees());
-
-        // Écouteur pour le bouton Supprimer
-        view.deleteButton.addActionListener(e -> deleteEmployee());
-
-        // Écouteur pour le bouton Modifier
-        view.modifyButton.addActionListener(e -> modifyEmployee());
-
-        // ActionListener pour le bouton "Gérer les Congés"
-        view.switchViewButton.addActionListener(e -> {
-            view.setVisible(false); // Cacher la vue des employés
-            holidayView.setVisible(true); // Afficher la vue des congés
-        });
-
-        // Ajouter un écouteur de sélection sur la table des employés
-        view.employeeTable.getSelectionModel().addListSelectionListener(e -> {
-            if (!e.getValueIsAdjusting()) {
-                int selectedRow = view.employeeTable.getSelectedRow();
-                if (selectedRow != -1) {
-                    // Récupérer les données de la ligne sélectionnée
-                    int id = (int) view.employeeTable.getValueAt(selectedRow, 0);
-                    String nom = (String) view.employeeTable.getValueAt(selectedRow, 1);
-                    String prenom = (String) view.employeeTable.getValueAt(selectedRow, 2);
-                    String email = (String) view.employeeTable.getValueAt(selectedRow, 3);
-                    String phone = (String) view.employeeTable.getValueAt(selectedRow, 4);
-                    double salaire = (double) view.employeeTable.getValueAt(selectedRow, 5);
-                    Role role = Role.valueOf(view.employeeTable.getValueAt(selectedRow, 6).toString());
-                    Poste poste = Poste.valueOf(view.employeeTable.getValueAt(selectedRow, 7).toString());
-
-                    // Remplir les champs de modification avec les valeurs de la ligne sélectionnée
-                    view.nameField.setText(nom);
-                    view.surnameField.setText(prenom);
-                    view.emailField.setText(email);
-                    view.phoneField.setText(phone);
-                    view.salaryField.setText(String.valueOf(salaire));
-                    view.roleCombo.setSelectedItem(role.toString());
-                    view.posteCombo.setSelectedItem(poste.toString());
-
-                    // Sauvegarder l'ID de l'employé dans le bouton de modification pour une mise à jour
-                    view.modifyButton.setActionCommand(String.valueOf(id));
+    protected EmployeeModel employeeModel;
+    protected static EmployeeView employeeView;
+    private static boolean isDeselecting = false;
+    private Employee employeelogged;
+    public EmployeeController(EmployeeModel employeeModel, EmployeeView employeeView,Employee employee) {
+        this.employeelogged = employee;
+        this.employeeModel = employeeModel;
+        EmployeeController.employeeView = employeeView;
+        EmployeeController.employeeView.getAjouterButton().addActionListener(e -> this.ajouterEmployee());
+        EmployeeController.employeeView.getAfficherButton().addActionListener(e -> {
+            if (employeeView.getNomField().getText().isEmpty() && employeeView.getPrenomField().getText().isEmpty() && employeeView.getSalaireField().getText().isEmpty() && employeeView.getEmailField().getText().isEmpty() && employeeView.getPhoneField().getText().isEmpty()) {
+                if(employeelogged.getRole().equals(Role.ADMIN) || employeelogged.getRole().equals(Role.MANAGER)){
+                    this.afficherEmployee();
+                }
+                if(employeelogged.getRole().equals(Role.EMPLOYEE)){
+                    this.afficherEmployeeLogged();
                 }
             }
         });
-
-        // Charger la liste des employés au démarrage
-        listEmployees();
+        EmployeeController.employeeView.getSupprimerButton().addActionListener(e -> this.supprimerEmployee());
+        EmployeeController.employeeView.getModifierButton().addActionListener(e -> this.updateEmployee());
+        EmployeeController.employeeView.getCreerCompteButton().addActionListener(e -> new CreerController());
+        EmployeeController.employeeView.getTable().getSelectionModel().addListSelectionListener(e -> this.setEmployeeInformations());
+        EmployeeController.employeeView.getDeselectButton().addActionListener(e -> EmployeeController.deselectEmployee());
+        employeeView.getImporterButton().addActionListener(e -> importerFichier());
+        employeeView.getExporterButton().addActionListener(e -> exporterFichier());
+        if(employeelogged.getRole().equals(Role.ADMIN) || employeelogged.getRole().equals(Role.MANAGER)){
+            this.afficherEmployee();
+        }
+        if(employeelogged.getRole().equals(Role.EMPLOYEE)){
+            this.afficherEmployeeLogged();
+        }
+    }
+    public void ajouterEmployee() {
+        String nom  = employeeView.getNomField().getText();
+        String prenom = employeeView.getPrenomField().getText();
+        String salaire = employeeView.getSalaireField().getText();
+        String email = employeeView.getEmailField().getText();
+        String phone = employeeView.getPhoneField().getText();
+        Role role = (Role) employeeView.getRoleComboBox().getSelectedItem();
+        Poste poste = (Poste) employeeView.getPosteComboBox().getSelectedItem();
+        boolean ajouter = employeeModel.ajouterEmployee(nom, prenom, salaire, email, phone, role , poste);
+        if(ajouter) {
+            this.afficherEmployee();
+        }
+    }
+    public void afficherEmployee() {
+        List<Employee> employees = employeeModel.afficherEmployee();
+        DefaultTableModel tableModel = (DefaultTableModel) employeeView.getTable().getModel();
+        tableModel.setRowCount(0);
+        for(Employee e : employees) {
+            tableModel.addRow(new Object[]{e.getId(), e.getNom(), e.getPrenom(), e.getEmail(), e.getSalaire(), e.getPhone(), e.getRole(), e.getPoste(),e.getHolidayBalance()});
+        }
     }
 
-    // Méthode pour ajouter un employé sans vérification de doublons
-    private void addEmployee() {
-        try {
-            String nom = view.nameField.getText().trim();
-            String prenom = view.surnameField.getText().trim();
-            String email = view.emailField.getText().trim();
-            String phone = view.phoneField.getText().trim();
-            String salaireText = view.salaryField.getText().trim();
-
-            // Validation des champs
-            if (nom.isEmpty() || prenom.isEmpty() || email.isEmpty() || phone.isEmpty() || salaireText.isEmpty()) {
-                JOptionPane.showMessageDialog(view, "Tous les champs sont obligatoires.");
-                return;
+    public void supprimerEmployee() {
+        int selectedRow = employeeView.getTable().getSelectedRow();
+        if (selectedRow != -1) {
+            try {
+                int id = Integer.parseInt(employeeView.getTable().getModel().getValueAt(selectedRow, 0).toString());
+                employeeModel.supprimerEmployee(id);
+                this.deselectEmployee();
+                this.afficherEmployee();
+            } catch (NumberFormatException e) {
+                System.out.println("Invalid ID format.");
             }
-
-            // Validation de l'adresse e-mail
-            if (!isValidEmail(email)) {
-                JOptionPane.showMessageDialog(view, "Veuillez entrer une adresse e-mail valide.");
-                return;
-            }
-
-            // Vérification de l'unicité de l'adresse e-mail
-            List<Employee> employees = dao.listAll();
-            for (Employee emp : employees) {
-                if (emp.getEmail().equalsIgnoreCase(email)) {
-                    JOptionPane.showMessageDialog(view, "Cette adresse e-mail existe déjà. Veuillez en choisir une autre.");
-                    return;
+        } else {
+            EmployeeView.SupprimerFail("Veuillez choisir un employé.");
+        }
+        this.afficherEmployee();
+    }
+    public void updateEmployee() {
+        int selectedRow = employeeView.getTable().getSelectedRow();
+        if (selectedRow != -1) {
+            try {
+                int id = Integer.parseInt(employeeView.getTable().getModel().getValueAt(selectedRow, 0).toString());
+                String nom = employeeView.getNomField().getText();
+                String prenom = employeeView.getPrenomField().getText();
+                String email = employeeView.getEmailField().getText();
+                double salaire = Utils.parseDouble(employeeView.getSalaireField().getText());
+                String phone = employeeView.getPhoneField().getText();
+                Role role = (Role) (employeeView.getRoleComboBox().getSelectedItem());
+                Poste poste = (Poste) employeeView.getPosteComboBox().getSelectedItem();
+                Employee employeeToUpdate = employeeModel.findById(id);
+                if (employeeToUpdate != null) {
+                    employeeModel.updateEmployee(employeeToUpdate,id, nom, prenom, email, salaire, phone, role, poste);
+                    this.deselectEmployee();
+                    if(employeelogged.getRole().equals(Role.ADMIN) || employeelogged.getRole().equals(Role.MANAGER)){
+                        this.afficherEmployee();
+                    }
+                    if(employeelogged.getRole().equals(Role.EMPLOYEE)){
+                        this.afficherEmployeeLogged();
+                    }
+                } else {
+                    EmployeeView.ModifierFail("L'employé avec l'ID spécifié n'existe pas.");
                 }
+            } catch (NumberFormatException e) {
+                EmployeeView.ModifierFail("Erreur lors de la mise à jour de l'employé.");
             }
-
-            double salaire = Double.parseDouble(salaireText);
-
-            Role role = Role.valueOf(view.roleCombo.getSelectedItem().toString().toUpperCase());
-            Poste poste = Poste.valueOf(view.posteCombo.getSelectedItem().toString().toUpperCase());
-
-            Employee employee = new Employee(nom, prenom, email, phone, salaire, role, poste);
-            dao.add(employee);
-            JOptionPane.showMessageDialog(view, "Employé ajouté avec succès.");
-            listEmployees(); // Rafraîchir la liste
-            clearFields();
-
-        } catch (NumberFormatException ex) {
-            JOptionPane.showMessageDialog(view, "Salaire invalide.");
-        } catch (Exception ex) {
-            JOptionPane.showMessageDialog(view, "Erreur: " + ex.getMessage());
+        }else{
+            EmployeeView.ModifierFail("Veuillez choisir un employé.");
         }
     }
-
-
-    private boolean isValidEmail(String email) {
-        String emailRegex = "^[\\w.-]+@[\\w.-]+\\.[a-zA-Z]{2,}$";
-        return email.matches(emailRegex);
-    }
-
-    private void listEmployees() {
-        List<Employee> employees = dao.listAll();
-        String[] columnNames = {"ID", "Nom", "Prénom", "Email", "Téléphone", "Salaire", "Rôle", "Poste"};
-        DefaultTableModel model = new DefaultTableModel(columnNames, 0);
-
-        for (Employee emp : employees) {
-            Object[] row = {emp.getId(), emp.getNom(), emp.getPrenom(), emp.getEmail(), emp.getPhone(), emp.getSalaire(), emp.getRole(), emp.getPoste()};
-            model.addRow(row);
+    public static int getId(){
+        int selectedRow = employeeView.getTable().getSelectedRow();
+        int id=-1;
+        if (selectedRow != -1) {
+            try {
+                id = Integer.parseInt(employeeView.getTable().getModel().getValueAt(selectedRow, 0).toString());
+            } catch (NumberFormatException e) {
+                System.out.println("Invalid ID format.");
+            }
         }
-
-        view.employeeTable.setModel(model);
+        return id;
+    }
+    public static void viderLesChamps(){
+        boolean check = LoginModel.getIsAdmin();
+        check = true;////// BINMA 9ADINA HOLIDAYS O LOGIN 
+        if(check == true){
+            employeeView.getNomField().setText("");
+            employeeView.getPrenomField().setText("");
+            employeeView.getSalaireField().setText("");
+            employeeView.getEmailField().setText("");
+            employeeView.getPhoneField().setText("");
+            employeeView.getRoleComboBox().setSelectedIndex(-1);
+            employeeView.getPosteComboBox().setSelectedIndex(-1);
+            return;
+        }
+    }
+    public void setEmployeeInformations() {
+        if (isDeselecting) return;
+        int selectedRow = employeeView.getTable().getSelectedRow();
+        if (selectedRow == -1) {
+            return;
+        }
+        int id = Integer.parseInt(employeeView.getTable().getModel().getValueAt(selectedRow, 0).toString());
+        Employee employee = employeeModel.findById(id);
+        employeeView.getNomField().setText(employee.getNom());
+        employeeView.getPrenomField().setText(employee.getPrenom());
+        employeeView.getSalaireField().setText(String.valueOf(employee.getSalaire()));
+        employeeView.getEmailField().setText(employee.getEmail());
+        employeeView.getPhoneField().setText(employee.getPhone());
+        employeeView.getRoleComboBox().setSelectedItem(employee.getRole());
+        employeeView.getPosteComboBox().setSelectedItem(employee.getPoste());
+        employeeView.getDeselectButton().setVisible(true);
     }
 
-    private void deleteEmployee() {
+    public static void deselectEmployee() {
+        isDeselecting = true;
+        employeeView.getNomField().setText("");
+        employeeView.getPrenomField().setText("");
+        employeeView.getSalaireField().setText("");
+        employeeView.getEmailField().setText("");
+        employeeView.getPhoneField().setText("");
+        employeeView.getRoleComboBox().setSelectedIndex(-1);
+        employeeView.getPosteComboBox().setSelectedIndex(-1);
+        employeeView.getDeselectButton().setVisible(false);
+        employeeView.getTable().clearSelection();
+        isDeselecting = false;
+    }
+    public void afficherEmployeeLogged() {
+        Employee employeeloggeddb = employeeModel.findById(employeelogged.getId());
+        DefaultTableModel tableModel = (DefaultTableModel) employeeView.getTable().getModel();
+        tableModel.setRowCount(0);
+        tableModel.addRow(new Object[]{employeeloggeddb.getId(), employeeloggeddb.getNom(), employeeloggeddb.getPrenom(), employeeloggeddb.getEmail(), employeeloggeddb.getSalaire(), employeeloggeddb.getPhone(), employeeloggeddb.getRole(), employeeloggeddb.getPoste(),employeeloggeddb.getHolidayBalance()});
+    }
+    public void exportData() {
         try {
-            int selectedRow = view.employeeTable.getSelectedRow();
-            if (selectedRow == -1) {
-                JOptionPane.showMessageDialog(view, "Veuillez sélectionner un employé à supprimer.");
-                return;
-            }
-
-            int id = (int) view.employeeTable.getValueAt(selectedRow, 0);
-
-            int confirm = JOptionPane.showConfirmDialog(view,
-                    "Êtes-vous sûr de vouloir supprimer l'employé avec l'ID " + id + " ?",
-                    "Confirmation de suppression",
-                    JOptionPane.YES_NO_OPTION);
-
-            if (confirm == JOptionPane.YES_OPTION) {
-                dao.delete(id);
-                JOptionPane.showMessageDialog(view, "Employé supprimé avec succès.");
-                listEmployees();
-                clearFields(); // Vider les champs après suppression
-            }
-        } catch (Exception ex) {
-            JOptionPane.showMessageDialog(view, "Erreur : " + ex.getMessage());
+            List<Employee> employees = employeeModel.afficherEmployee();
+            employeeModel.exportData("exported_employees.txt", employees);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
-
-
-    private void modifyEmployee() {
+    private void importData() {
         try {
-            String actionCommand = view.modifyButton.getActionCommand();
-            if (actionCommand != null && !actionCommand.trim().isEmpty()) {
-                int id = Integer.parseInt(actionCommand.trim());
-
-                String nom = view.nameField.getText().trim();
-                String prenom = view.surnameField.getText().trim();
-                String email = view.emailField.getText().trim();
-                String phone = view.phoneField.getText().trim();
-                String salaireText = view.salaryField.getText().trim();
-
-                if (nom.isEmpty() || prenom.isEmpty() || email.isEmpty() || phone.isEmpty() || salaireText.isEmpty()) {
-                    JOptionPane.showMessageDialog(view, "Tous les champs sont obligatoires.");
-                    return;
-                }
-                if (!isValidEmail(email)) {
-                    JOptionPane.showMessageDialog(view, "Veuillez entrer une adresse e-mail valide.");
-                    return;
-                }
-                double salaire = Double.parseDouble(salaireText);
-
-                Role role = Role.valueOf(view.roleCombo.getSelectedItem().toString().toUpperCase());
-                Poste poste = Poste.valueOf(view.posteCombo.getSelectedItem().toString().toUpperCase());
-
-                Employee updatedEmployee = new Employee(nom, prenom, email, phone, salaire, role, poste);
-                dao.update(updatedEmployee, id);
-
-                JOptionPane.showMessageDialog(view, "Employé mis à jour avec succès.");
-                listEmployees();
-                clearFields();
-            } else {
-                JOptionPane.showMessageDialog(view, "Veuillez sélectionner un employé à modifier.");
-            }
-        } catch (NumberFormatException ex) {
-            JOptionPane.showMessageDialog(view, "Salaire invalide.");
-        } catch (Exception ex) {
-            JOptionPane.showMessageDialog(view, "Erreur: " + ex.getMessage());
+            employeeModel.importData("employees.txt");
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
-    public void clearFields() {
-        view.nameField.setText("");
-        view.surnameField.setText("");
-        view.emailField.setText("");
-        view.phoneField.setText("");
-        view.salaryField.setText("");
-        view.roleCombo.setSelectedIndex(0); // Réinitialise au premier élément
-        view.posteCombo.setSelectedIndex(0); // Réinitialise au premier élément
-        view.modifyButton.setActionCommand(""); // Effacer l'ID stocké
+    private void handleExport() {
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setFileFilter(new FileNameExtensionFilter("Fichiers CSV", "csv"));
+
+        if (fileChooser.showSaveDialog(employeeView) == JFileChooser.APPROVE_OPTION) {
+            try {
+                String filePath = fileChooser.getSelectedFile().getAbsolutePath();
+                if (!filePath.toLowerCase().endsWith(".txt")) {
+                    filePath += ".txt";
+                }
+
+                List<Employee> employees = employeeModel.findAll();
+                employeeModel.exportData(filePath, employees);
+                employeeView.showSuccessMessage("Exportation réussie !");
+            } catch (Exception ex) {
+                employeeView.showErrorMessage("Erreur lors de l'exportation : " + ex.getMessage());
+            }
+        }
+    }
+    private void handleImport() {
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setFileFilter(new FileNameExtensionFilter("Fichiers CSV", "txt"));
+
+        if (fileChooser.showOpenDialog(employeeView) == JFileChooser.APPROVE_OPTION) {
+            try {
+                String filePath = fileChooser.getSelectedFile().getAbsolutePath();
+                employeeModel.importData(filePath);
+                employeeView.showSuccessMessage("Importation réussie !");
+            } catch (Exception ex) {
+                employeeView.showErrorMessage("Erreur lors de l'importation : " + ex.getMessage());
+            }
+        }
+    }
+    public void importerFichier() {
+        handleImport(); // Appelle la logique d'importation existante
+    }
+
+    public void exporterFichier() {
+        handleExport(); // Appelle la logique d'exportation existante
     }
 }
